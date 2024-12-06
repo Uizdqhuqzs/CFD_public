@@ -12,7 +12,7 @@
 
 ## Short description
 
-This program is a solver for the Navier-Stokes equations in 2D incompressible flows. It relies on spectral decomposition to compute derivatives using FFT. A first-order discretization scheme is applied for time integration.
+This program is a solver for the Navier-Stokes equations in 2D incompressible flows. It relies on spectral decomposition to compute derivatives using the fast Fourrier transform algorithm implemented in numpy. A first-order discretization scheme is applied for time integration.
 
 The code is intended for training purposes and serves as a first step toward developing more comprehensive solvers.
 

@@ -1,4 +1,3 @@
-# Initialisation de la figure pour visualisation
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from tqdm import tqdm
