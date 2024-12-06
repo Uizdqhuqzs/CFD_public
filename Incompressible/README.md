@@ -17,6 +17,17 @@ This program is a solver for the Navier-Stokes equations in 2D incompressible fl
 The code is intended for training purposes and serves as a first step toward developing more comprehensive solvers.
 
 
+## Features
+
+### Obstacle initialization
+
+The obstacle is modeled using the immersed boundary method. In the code, the obstacle geometry is declared in the *masque* 2D array in the *Forces extérieures* section. 
+
+### Post-processing
+
+Every 1000 iterations an XML-formated vti file is generated for post-processing with Paraview.
+
+
 ## Limitations 
 
 A dealiasing filter is applied when solving the non-linear term. As a result, small-scale phenomena are not fully resolved.
