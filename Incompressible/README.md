@@ -2,7 +2,7 @@
 
 ## Requirements :
 
-- Python 3.6 (usage of fstrings)
+- Python 3.6 or higher (usage of fstrings)
 - Numpy
 - Matplotlib
 - Scipy
