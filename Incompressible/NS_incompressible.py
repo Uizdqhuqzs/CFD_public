@@ -96,14 +96,6 @@ def obstacle_naca0012(x, y, Nx, Ny, X_pos, Y_pos, c, t):
                 if np.abs(y[j, i]) < y_interp(x[j, i]):
                     mask[j, i] = 1
 
-    """# Plot the cylindrical obstacle
-    plt.contourf(x, y, mask)
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.colorbar(label="Cylindrical Obstacle")
-    plt.show()"""
-
-
     return mask
 
 
@@ -128,10 +120,10 @@ kx = np.fft.fftfreq(Nx) * Nx
 y  = np.linspace(0, Ny-1, Ny) / Ny * 2 * np.pi
 ky = np.fft.fftfreq(Ny) * Ny
 
-# mapping [0, 2 pi]x[0, 2 pi] -> [X1, X2]x[Y1, Y2]
+# Mapping [0, 2 pi]x[0, 2 pi] -> [X1, X2]x[Y1, Y2]
 x, kx = (X2 - X1) / (2 * np.pi) * x + X1, 2 * np.pi / (X2 - X1) * kx
 y, ky = (Y2 - Y1) / (2 * np.pi) * y + Y1, 2 * np.pi / (Y2 - Y1) * ky
-# grilles du domaine
+# Grilles du domaine
 x, y = np.meshgrid(x, y)
 kx, ky = np.meshgrid(kx, ky)
 
@@ -141,12 +133,14 @@ kmax = np.max(np.sqrt(k2))
 dealias[np.sqrt(k2) < 2 * kmax / 3] = 1
 
 "------------------------------------------ Conditions initiales ------------------------------------------------"
-#CI Green-Taylor
+
+# CI Green-Taylor
+
 """u = np.sin(x) * np.cos(y)  # Condition initiale
 v = -np.sin(y) * np.cos(x)
 p = -0.25 * (np.cos(2 * x) + np.cos(2 * y))"""
 
-#CI Vortex Merging
+# CI Vortex Merging
 
 """r1_2 = (x-0.5)**2 + y**2
 r2_2 = (x+0.5)**2 + y**2
@@ -187,6 +181,8 @@ ampl_obstacle = 20
 # Buffer
 ampl_buffer = 20
 buffer = ampl_buffer*np.exp(-(x - 0.9 * (X2 - X1))**2 / 4)
+
+# Forçage (W.I.P)
 
 
 "------------------------------------------ Solver ------------------------------------------------"
@@ -240,7 +236,6 @@ for n in tqdm(range(Nt), desc="Calcul de la simulation", unit="étape"):
     Tnlv = np.fft.fftn(u * dvx + v * dvy) * dealias
 
     # Projection
-    # Update spectral u and v with diffusion and buffer terms
     uft = (uf / dt + np.fft.fftn(obstacle_u) - np.fft.fftn(buffer * (u - 1)) - 1j * kx * pf - Tnlu) / (1 / dt + K2P / Re)
     vft = (vf / dt + np.fft.fftn(obstacle_v) - np.fft.fftn(buffer * (v))     - 1j * ky * pf - Tnlv) / (1 / dt + K2P / Re)
     ppf = pf - 1j*(kx * uft + ky * vft) / (dt * K2P)
@@ -267,6 +262,7 @@ for n in tqdm(range(Nt), desc="Calcul de la simulation", unit="étape"):
         save_vti(f"temps{1000*n * dt:.0f}.vti",u, v, x[0], y[:,0])
 
 # Visualisation tous les 10 pas de temps
+
 if (n % 10 == 0) and Suivre:
     for ax in axes:
          ax.cla()  # Effacement de l'axe pour réinitialiser le graphique
