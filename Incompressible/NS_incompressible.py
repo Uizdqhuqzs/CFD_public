@@ -114,14 +114,14 @@ fig_vorticity, ax_vorticity = plt.subplots(figsize=(6, 5))  # Fenêtre séparée
 plt.ion()  
 Contour_number = 50
 
-"---------------------------  physical and numerical parameters  --------------------------"
+"---------------------------  Paramètres physiques et numériques  --------------------------"
 Re = 3000
 T, dt = 50, 1e-4
 Nx, X1, X2 = 300, -0.1, 10
 Ny, Y1, Y2 = 100, -0.2, 0.2
 Suivre = False
 
-"------------------------- physical and spectral discretizations  -------------------------"
+"------------------------- Discrétisation des domaines physiques et spectraux   -------------------------"
 Nt = round(T/dt)+1
 x  = np.linspace(0, Nx-1, Nx) / Nx * 2 * np.pi
 kx = np.fft.fftfreq(Nx) * Nx
@@ -131,7 +131,7 @@ ky = np.fft.fftfreq(Ny) * Ny
 # mapping [0, 2 pi]x[0, 2 pi] -> [X1, X2]x[Y1, Y2]
 x, kx = (X2 - X1) / (2 * np.pi) * x + X1, 2 * np.pi / (X2 - X1) * kx
 y, ky = (Y2 - Y1) / (2 * np.pi) * y + Y1, 2 * np.pi / (Y2 - Y1) * ky
-# grids
+# grilles du domaine
 x, y = np.meshgrid(x, y)
 kx, ky = np.meshgrid(kx, ky)
 
@@ -190,7 +190,7 @@ buffer = ampl_buffer*np.exp(-(x - 0.9 * (X2 - X1))**2 / 4)
 
 
 "------------------------------------------ Solver ------------------------------------------------"
-#espace spectral
+# Espace spectral
 pf = np.fft.fftn(p)
 uf = np.fft.fftn(u)
 vf = np.fft.fftn(v)
@@ -209,14 +209,14 @@ u_min, u_max = -1.5, 1.1 #np.min(u), np.max(u)
 v_min, v_max = -1.5, 1.1 #np.min(v), np.max(v)
 p_min, p_max = np.min(p), np.max(p)
 
-# itérations temporelle
+# Itérations temporelles
 for n in tqdm(range(Nt), desc="Calcul de la simulation", unit="étape"):
 
-    # Calcul du nombre de Courant
-    max_u = np.max(np.sqrt(u**2 + v**2))  # Norme maximale de la vitesse
+    # Calcul du nombre CFL
+    max_u = np.max(np.sqrt(u**2 + v**2))
     Cx = max_u * dt / dx
     Cy = max_u * dt / dy
-    C = max(Cx, Cy)  # Nombre de Courant maximal
+    C = max(Cx, Cy)  # CFL maximal
     if (n%(Nt//10) == 0):
         print(f"Étape {n}/{Nt}")
         print("Nombre de courant max : ", C)
@@ -250,7 +250,7 @@ for n in tqdm(range(Nt), desc="Calcul de la simulation", unit="étape"):
 
     pf = ppf
 
-    #retour espace physique
+    # Retour espace physique
     u = np.real(np.fft.ifftn(uf))
     v = np.real(np.fft.ifftn(vf))
     p = np.real(np.fft.ifftn(pf))
@@ -259,7 +259,7 @@ for n in tqdm(range(Nt), desc="Calcul de la simulation", unit="étape"):
     energy.append(np.mean(u**2 + v**2) / 2)
     timeScale.append(n * dt)
 
-    #divergence
+    # Divergence
     div = np.fft.ifftn(1j * kx * uf + 1j * ky * vf)
     divergence.append(np.max(np.abs(div)))
 
@@ -364,8 +364,7 @@ ax_energy.set_title('Évolution de l\'énergie cinétique en fonction du temps')
 ax_energy.legend()
 plt.show()
 
-#tracer la divergence
-# Tracer l'énergie cinétique en fonction du temps
+# Tracer la divergence
 fig_divergence, ax_divergence = plt.subplots(figsize=(8, 6))
 ax_divergence.plot(timeScale, divergence, label="divergence")
 ax_divergence.set_xlabel('Temps')
