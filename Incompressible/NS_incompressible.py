@@ -7,92 +7,83 @@ from vtk.util import numpy_support
 import numpy as np
 import os
 
-# Définir OMP_NUM_THREADS à la valeur souhaitée (par exemple, 4 threads)
+# Set OMP_NUM_THREADS to the desired value (e.g., 4 threads)
 os.environ["OMP_NUM_THREADS"] = "8"
 
-# Fichier paraview
+# Paraview file
 def save_vti(filename, u, v, x, y):
-    # Création d'un objet vtkImageData
     grid = vtk.vtkImageData()
-    
-    # Définir la dimension de la grille en fonction des données
     ny, nx = u.shape
     grid.SetDimensions(nx, ny, 1)
-    
-    # Calcul des espacements à partir des coordonnées x et y
-    dx = x[1] - x[0]  # Supposant un maillage uniforme
+    dx = x[1] - x[0] # Assuming uniform grid
     dy = y[1] - y[0]
     grid.SetSpacing(dx, dy, 1)
-    
-    # Définir l'origine
     grid.SetOrigin(x[0], y[0], 0)
     
-    # Conversion des tableaux numpy u et v en vtkArray
+    
     u_flat = u.ravel()
     v_flat = v.ravel()
-    w_flat = np.zeros_like(u_flat)  # Composante nulle pour le champ en 2D
+    w_flat = np.zeros_like(u_flat)  # Zero component for 2D field
     
-    # Combiner les composantes u, v et w en un seul champ vectoriel
     velocity_vectors = np.column_stack((u_flat, v_flat, w_flat))
     velocity_vtk = numpy_support.numpy_to_vtk(velocity_vectors, deep=True, array_type=vtk.VTK_FLOAT)
     velocity_vtk.SetName("velocity")
     
-    # Ajouter le champ vectoriel au point data de la grille
     grid.GetPointData().SetVectors(velocity_vtk)
     
-    # Ecrire dans un fichier VTI
+    # Write to a VTI file
     writer = vtk.vtkXMLImageDataWriter()
     writer.SetFileName(filename)
     writer.SetInputData(grid)
     writer.Write()
 
-# Créer un masque pour l'obstacle NACA 0012
+
+# Create a mask for the NACA 0012 obstacle
 
 def naca0012(x, t):
     """
-    Génère les coordonnées y des profils supérieur et inférieur NACA 0012.
-    :param x: Coordonnées le long de la corde.
-    :param c: Longueur de la corde.
-    :param t: Épaisseur du profil.
-    :return: Coordonnées y des profils supérieur et inférieur.
+    Generates the y-coordinates of the upper and lower NACA 0012 profiles.
+    :param x: Coordinates along the chord.
+    :param c: Chord length.
+    :param t: Profile thickness.
+    :return: y-coordinates of upper and lower profiles.
     """
-    # Calcul des ordonnées pour le profil NACA 0012
     y = (t / 0.2) * (0.2969 * np.sqrt(x) - 0.1260 * x - 0.3516 * x**2 + 0.2843 * x**3 - 0.1015 * x**4)
     return y
 
 def obstacle_naca0012(x, y, Nx, Ny, X_pos, Y_pos, c, t):
     """
-    Crée un masque pour un obstacle NACA 0012 centré à (X_pos, Y_pos).
-    :param x: Grille des positions x.
-    :param y: Grille des positions y.
-    :param X_pos: Position x du centre de l'obstacle.
-    :param Y_pos: Position y du centre de l'obstacle.
-    :param c: Longueur de la corde du profil.
-    :param t: Épaisseur du profil.
-    :param threshold: Seuil de distance pour considérer un point à l'intérieur de l'obstacle.
-    :return: Masque représentant l'obstacle.
+    Creates a mask for a NACA 0012 obstacle centered at (X_pos, Y_pos).
+    :param x: Grid of x positions.
+    :param y: Grid of y positions.
+    :param X_pos: x position of the obstacle center.
+    :param Y_pos: y position of the obstacle center.
+    :param c: Chord length of the profile.
+    :param t: Profile thickness.
+    :param threshold: Distance threshold to consider a point inside the obstacle.
+    :return: Mask representing the obstacle.
     """
-    # Discrétisation du profil le long de x
+    # Discretization of the profile along x
     n_points = 1000
     x_profil = np.linspace(0, 1, n_points)
     y_profil = naca0012(x_profil, t)
     
-    # Mise à l'échelle et décalage pour centrer le profil à (X_pos, Y_pos)
+    # Scaling and shifting to center the profile at (X_pos, Y_pos)
     x_profil = X_pos + c * x_profil
     y_profil = Y_pos + y_profil
 
-    # Interpolation des profils supérieur et inférieur
+    
     y_interp = interp1d(x_profil, y_profil, kind='linear', fill_value="extrapolate")
 
-    # Création d'un masque pour représenter l'obstacle
+    
     mask = np.zeros((Ny, Nx))
 
-    # Boucle sur chaque point du maillage de simulation
+    
     for i in range(Nx):
         for j in range(Ny):
-            if X_pos <= x[j, i] <= X_pos + c:  # Si x[i] est dans la plage de la corde
+            if X_pos <= x[j, i] <= X_pos + c:   # Check if x[i] is within the chord range
                 
-                # Si le point est proche de l'un des profils
+                # If the point is close to one of the profiles
                 if np.abs(y[j, i]) < y_interp(x[j, i]):
                     mask[j, i] = 1
 
@@ -100,20 +91,18 @@ def obstacle_naca0012(x, y, Nx, Ny, X_pos, Y_pos, c, t):
 
 
 
-# Initialisation de la figure pour visualiser les champs de vitesse, norme, et pression
 fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-fig_vorticity, ax_vorticity = plt.subplots(figsize=(6, 5))  # Fenêtre séparée pour la vorticité
-plt.ion()  
+fig_vorticity, ax_vorticity = plt.subplots(figsize=(6, 5)) 
 Contour_number = 50
 
-"---------------------------  Paramètres physiques et numériques  --------------------------"
+"---------------------------  Physical and Numerical Parameters  --------------------------"
 Re = 3000
 T, dt = 50, 1e-4
 Nx, X1, X2 = 300, -0.1, 10
 Ny, Y1, Y2 = 100, -0.2, 0.2
 Suivre = False
 
-"------------------------- Discrétisation des domaines physiques et spectraux   -------------------------"
+"------------------------- Discretization of Physical and Spectral Domains  -------------------------"
 Nt = round(T/dt)+1
 x  = np.linspace(0, Nx-1, Nx) / Nx * 2 * np.pi
 kx = np.fft.fftfreq(Nx) * Nx
@@ -123,7 +112,7 @@ ky = np.fft.fftfreq(Ny) * Ny
 # Mapping [0, 2 pi]x[0, 2 pi] -> [X1, X2]x[Y1, Y2]
 x, kx = (X2 - X1) / (2 * np.pi) * x + X1, 2 * np.pi / (X2 - X1) * kx
 y, ky = (Y2 - Y1) / (2 * np.pi) * y + Y1, 2 * np.pi / (Y2 - Y1) * ky
-# Grilles du domaine
+# Grids
 x, y = np.meshgrid(x, y)
 kx, ky = np.meshgrid(kx, ky)
 
@@ -132,7 +121,7 @@ dealias = np.zeros((Ny, Nx))
 kmax = np.max(np.sqrt(k2))
 dealias[np.sqrt(k2) < 2 * kmax / 3] = 1
 
-"------------------------------------------ Conditions initiales ------------------------------------------------"
+"------------------------------------------ Initial state ------------------------------------------------"
 
 # CI Green-Taylor
 
@@ -157,14 +146,14 @@ m_v = np.max(np.abs(v))
 max_u = np.max(np.sqrt(u**2 + v**2))"""
 #print(f"vitesse initiale : u_max = {m_u:.5f}, v_max = {m_v:.5f}, norme_max = {max_u:.5f}\n\n")
 
-# Ecoulement Laminaire
+# Laminar flow
 
 u = np.ones((Ny, Nx)) * 2
 v = np.zeros((Ny, Nx)) + (np.random.rand(Ny, Nx) - 0.5)
 p = np.zeros((Ny, Nx))
 
 "------------------------------------------ Forces Extérieures ------------------------------------------------"
-# Obstacle Cylindre
+# Cylinder obstacle
 """masque = np.zeros((Ny, Nx))
 masque[np.sqrt(x**2 + y**2) <= 0.5] = 1
 u_star = 0 * u
@@ -186,7 +175,7 @@ buffer = ampl_buffer*np.exp(-(x - 0.9 * (X2 - X1))**2 / 4)
 
 
 "------------------------------------------ Solver ------------------------------------------------"
-# Espace spectral
+# Spectral space
 pf = np.fft.fftn(p)
 uf = np.fft.fftn(u)
 vf = np.fft.fftn(v)
@@ -196,29 +185,28 @@ energy = []
 divergence = []
 timeScale = []
 
-# Calcul des espacements Δx et Δy
 dx = (X2 - X1) / Nx
 dy = (Y2 - Y1) / Ny
 
-# Calcul des limites fixes pour les échelles de couleur
+# Color scale for plots
 u_min, u_max = -1.5, 1.1 #np.min(u), np.max(u)
 v_min, v_max = -1.5, 1.1 #np.min(v), np.max(v)
 p_min, p_max = np.min(p), np.max(p)
 
-# Itérations temporelles
+# Time iteration
 for n in tqdm(range(Nt), desc="Calcul de la simulation", unit="étape"):
 
-    # Calcul du nombre CFL
+    # Compute CFL number
     max_u = np.max(np.sqrt(u**2 + v**2))
     Cx = max_u * dt / dx
     Cy = max_u * dt / dy
-    C = max(Cx, Cy)  # CFL maximal
+    C = max(Cx, Cy)  # CFL max
     if (n%(Nt//10) == 0):
         print(f"Étape {n}/{Nt}")
         print("Nombre de courant max : ", C)
         print(f"max_u ={max_u:.5f}, dt = {dt:.5f}, dx = {dx:.5f}, dy = {dy:.5f}")
 
-    # Interruption si C > 1
+    # Interruption if C > 1
     if C > 1:
         print(f"Nombre de Courant dépassé : C = {C:.2f}. Simulation arrêtée.")
         break
@@ -231,7 +219,7 @@ for n in tqdm(range(Nt), desc="Calcul de la simulation", unit="étape"):
     obstacle_u = ampl_obstacle*masque*(u_star-u)
     obstacle_v = ampl_obstacle*masque*(u_star-v)
 
-    # Prédiction
+    # Prediction (Temam-Chorin method)
     Tnlu = np.fft.fftn(u * dux + v * duy) * dealias
     Tnlv = np.fft.fftn(u * dvx + v * dvy) * dealias
 
@@ -245,12 +233,12 @@ for n in tqdm(range(Nt), desc="Calcul de la simulation", unit="étape"):
 
     pf = ppf
 
-    # Retour espace physique
+    # Translation to physical space
     u = np.real(np.fft.ifftn(uf))
     v = np.real(np.fft.ifftn(vf))
     p = np.real(np.fft.ifftn(pf))
 
-    # Énergie cinétique
+    # Kinetic energy
     energy.append(np.mean(u**2 + v**2) / 2)
     timeScale.append(n * dt)
 
@@ -261,78 +249,79 @@ for n in tqdm(range(Nt), desc="Calcul de la simulation", unit="étape"):
     if (n % 1000 == 0):
         save_vti(f"temps{1000*n * dt:.0f}.vti",u, v, x[0], y[:,0])
 
-# Visualisation tous les 10 pas de temps
+# Visualisation every 10 time steps
 
 if (n % 10 == 0) and Suivre:
+    # Plot window cleaning
     for ax in axes:
-         ax.cla()  # Effacement de l'axe pour réinitialiser le graphique
-    ax_vorticity.cla()  # Effacement de la fenêtre de vorticité
+         ax.cla()  
+    ax_vorticity.cla()  
 
-    # Norme de u
+    # Norm u
     norme = np.sqrt(u**2 + v**2)
     c_norme = axes[0].contourf(x, y, norme, levels=Contour_number, cmap="RdBu")
     if n == 0:
             fig.colorbar(c_norme, ax=axes[0])
     axes[0].set_title("Norme $u$")
 
-    # Champ de vitesse u
+    # u field
     c_u = axes[1].contourf(x, y, u, levels=Contour_number, cmap="RdBu", vmin=u_min, vmax=u_max, extend='both')
     if n == 0:
             fig.colorbar(c_u, ax=axes[1])
     axes[1].set_title("Champ de vitesse $u$")
 
-    # Champ de vitesse v
+    # v field
     c_v = axes[2].contourf(x, y, v, levels=Contour_number, cmap="RdBu", vmin=v_min, vmax=v_max, extend='both')
     if n == 0:
         fig.colorbar(c_v, ax=axes[2])
     axes[2].set_title("Champ de vitesse $v$")
 
-    # Vorticité de u (affichage dans la fenêtre séparée)
+    # vorticity field
     vorticite = np.real(np.fft.ifftn(1j*kx*vf - 1j*ky*uf))
     c_vorticite = ax_vorticity.contourf(x, y, vorticite, levels=Contour_number, cmap="RdBu")
     if n == 0:
         fig_vorticity.colorbar(c_vorticite, ax=ax_vorticity)
     ax_vorticity.set_title("Vorticité $u$")
 
-    # Mettre à jour les titres et affichages
+    # Plot update
     fig.suptitle(f"Temps : {n * dt:.3f} s")
     fig_vorticity.suptitle(f"Temps : {n * dt:.3f} s (Vorticité)")
     plt.pause(1e-20)
 
 "------------------------------------------ Affichage final ------------------------------------------------"
-# Affichage final si Suivre = False
+# Final plot if Suivre = False
 if not Suivre:
     for ax in axes:
-        ax.cla()  # Effacement de l'axe pour réinitialiser le graphique
-    ax_vorticity.cla()  # Effacement de la fenêtre de vorticité
+        ax.cla() 
+    ax_vorticity.cla()  
 
-    # Norme de u (échelle dynamique)
+
     norme = np.sqrt(u**2 + v**2)
     c_norme = axes[0].contourf(x, y, norme, levels=Contour_number, cmap="RdBu")
     fig.colorbar(c_norme, ax=axes[0])
     axes[0].set_title("Norme $u$")
-    axes[0].contour(x, y, masque, levels=[0.5], colors="black")  # Masque de l'obstacle
+    axes[0].contour(x, y, masque, levels=[0.5], colors="black")  
 
-    # Champ de vitesse u (échelle fixe)
+
     c_u = axes[1].contourf(x, y, u, levels=Contour_number, cmap="RdBu", vmin=u_min, vmax=u_max, extend='both')
     fig.colorbar(c_u, ax=axes[1])
     axes[1].set_title("Champ de vitesse $u$")
-    axes[1].contour(x, y, masque, levels=[0.5], colors="black")  # Masque de l'obstacle
+    axes[1].contour(x, y, masque, levels=[0.5], colors="black")  
 
-    # Champ de vitesse v (échelle fixe)
+
     c_v = axes[2].contourf(x, y, v, levels=Contour_number, cmap="RdBu", vmin=v_min, vmax=v_max, extend='both')
     fig.colorbar(c_v, ax=axes[2])
     axes[2].set_title("Champ de vitesse $v$")
-    axes[2].contour(x, y, masque, levels=[0.5], colors="black")  # Masque de l'obstacle
+    axes[2].contour(x, y, masque, levels=[0.5], colors="black")  
 
-    # Vorticité de u (échelle dynamique)
+
     vorticite = np.real(np.fft.ifftn(1j*kx*vf - 1j*ky*uf))
     c_vorticite = ax_vorticity.contourf(x, y, vorticite, levels=Contour_number, cmap="RdBu", vmin=-60, vmax=40)
     fig_vorticity.colorbar(c_vorticite, ax=ax_vorticity)
     ax_vorticity.set_title("Vorticité $u$")
-    ax_vorticity.contour(x, y, masque, levels=[0.5], colors="black")  # Masque de l'obstacle
+    ax_vorticity.contour(x, y, masque, levels=[0.5], colors="black")  
 
-    # Mise à jour des titres finaux
+
     fig.suptitle(f"Temps final : {n * dt:.3f} s")
     fig_vorticity.suptitle(f"Temps final : {n * dt:.3f} s (Vorticité)")
     plt.pause(1e-20)
@@ -340,11 +329,11 @@ if not Suivre:
 
     save_vti(f"temps_final_{1000*n * dt:.3f}s.vti",u, v, x[0], y[:,0])
 
-plt.ioff()  # Désactiver le mode interactif à la fin
+plt.ioff()  # Disable interactive mode
 plt.show()
 
 
-"------------------------------------------ Plot de controle ------------------------------------------------"
+"------------------------------------------ Control plots ------------------------------------------------"
 exact_energy = []
 
 for i in range(len(timeScale)):
