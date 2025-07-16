@@ -11,12 +11,12 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.stats import norm
 
 
-# --- Nombre de pétales (Glauser) ---
-
 '''def sample_N():
     values = np.arange(2, 11)
     weights = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]) #np.array([0.15, 0.14, 0.16, 0.18, 0.19, 0.13, 0.05, 0.0, 0.0])  # somme = 1
     return np.random.choice(values, p=weights)'''
+
+# --- Nombre de pétales (Glauser) ---
 
 def sample_N():
 

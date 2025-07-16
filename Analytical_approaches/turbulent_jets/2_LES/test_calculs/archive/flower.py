@@ -4,8 +4,8 @@ from mpl_toolkits.mplot3d import Axes3D
 
 # Paramètres du vortex
 h = 1.0
-a = h / 2
-b = h / 2
+a = 0.5
+b = 0.15
 phi = np.pi / 6
 
 # Paramètre ζ

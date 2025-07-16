@@ -82,8 +82,8 @@ def lamb_oseen_line_velocity_field(X, Y, Z, line_pts, Gamma=1.0, rc=0.1):
 # --- MAIN ---
 
 # Mesh
-Nx, Ny, Nz = 150, 150, 800   #Nx, Ny, Nz = 250, 250, 1000
-Lx, Ly, Lz = 20, 20, 800
+Nx, Ny, Nz = 100, 100, 800   #Nx, Ny, Nz = 250, 250, 1000
+Lx, Ly, Lz = 40, 40, 2000
 x = np.linspace(-Lx, Lx, Nx)
 y = np.linspace(-Ly, Ly, Ny)
 z = np.linspace(0, Lz, Nz)
@@ -92,17 +92,17 @@ points = np.stack((X.ravel(), Y.ravel(), Z.ravel()), axis=-1)
 
 # Paramètres de base
 h = 1.5
-rc = 0.5
+rc = 0.05
 Gamma = 1 # à calibrer
 a = 0.5
-b = 0.3
+b = 0.5
 
 # Hairpin de base (pour interpolation)
 zeta = np.linspace(-np.pi, np.pi, 100)
 base_curve = hairpin_curve(zeta, a, b, h, np.pi/6)
 #plot_parametrized_curve(base_curve)
 
-pickle_filename = "hairpin_rc_0p1_general_finer.pkl"
+pickle_filename = "hairpin_rc_0p05.pkl"
 
 if os.path.exists(pickle_filename):
     print(f"{pickle_filename} déjà généré !")

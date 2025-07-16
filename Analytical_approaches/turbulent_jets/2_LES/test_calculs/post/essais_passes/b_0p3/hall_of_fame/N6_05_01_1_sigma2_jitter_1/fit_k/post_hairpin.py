@@ -193,9 +193,9 @@ for vti_file in vti_list :
     R = np.sqrt(X**2 + Y**2)
     Theta = np.arctan2(Y, X)
 
-    def plot_scalar_field_3D(data3d, title, filename, cmap="viridis"):
+    '''def plot_scalar_field_3D(data3d, title, filename, cmap="viridis"):
         plt.figure(figsize=(6, 5))
-        plt.pcolormesh(x, y, data3d, shading='auto', cmap=cmap)
+        plt.pcolormesh(X, Y, data3d[].T, shading='auto', cmap=cmap)
         plt.colorbar(label=title)
         plt.xlabel("x")
         plt.ylabel("y")
@@ -203,8 +203,7 @@ for vti_file in vti_list :
         plt.axis("equal")
         plt.tight_layout()
         plt.savefig(filename, dpi=dpi)
-        plt.close()
-        print(f"plot k 2D dans {filename}")
+        plt.close()'''
 
     # === Chargement des profils moyens 1D en r ===
     U_r_data = np.load(f"post/avg_plots/curves/velocity_x_azim_avg.npy")
@@ -292,9 +291,9 @@ for vti_file in vti_list :
                 v_var = np.nanmean(v_var_3d, axis=2)
                 w_var = np.nanmean(w_var_3d, axis=2)
 
-                plot_scalar_field_3D(u_var,"u'","post/TKE_plots/u'.png")
-                plot_scalar_field_3D(v_var,"v'","post/TKE_plots/v'.png")
-                plot_scalar_field_3D(w_var,"w'","post/TKE_plots/w'.png")
+                '''plot_scalar_field(u_var,"u'","u'.png")
+                plot_scalar_field(v_var,"v'","v'.png")
+                plot_scalar_field(w_var,"w'","w'.png")'''
 
                 # === Moyenne azimutale de chaque variance ===
                 r_max_interp = np.sqrt(np.max(x)**2 + np.max(y)**2)
@@ -400,5 +399,5 @@ for vti_file in vti_list :
         for file in files:
             if file.endswith(".npy"):
                 full_path = os.path.join(root, file)
-                #print(f"Suppression : {full_path}")
+                print(f"Suppression : {full_path}")
                 os.remove(full_path)
